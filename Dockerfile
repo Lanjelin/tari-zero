@@ -4,8 +4,8 @@ ARG TARI_TAG=4.9.0
 FROM debian:bookworm-slim AS builder
 
 ARG TARI_TAG
-ARG tari_url="https://github.com/tari-project/tari/releases/download/v$TARI_TAG/"
-ARG tari_zip="tari_suite-$TARI_TAG-d9b1c0d-linux-x86_64.zip"
+ARG tari_url="https://github.com/tari-project/tari/releases/download/$TARI_TAG/"
+
 
 RUN apt update && apt-get install -y \
       unzip wget ca-certificates binutils && \
@@ -13,7 +13,8 @@ RUN apt update && apt-get install -y \
 
 WORKDIR /build
 
-RUN wget "$tari_url$tari_zip" && \
+RUN tari_zip="tari_suite-${TARI_TAG#v}-d9b1c0d-linux-x86_64.zip" && \
+    wget "$tari_url$tari_zip" && \
     wget "$tari_url$tari_zip.sha256" && \
     sha256sum "$tari_zip.sha256" --check || { echo "Hash mismatch!"; exit 1; } && \
     unzip "$tari_zip"
