@@ -42,8 +42,7 @@ jobs:
           TAG=${{ steps.version.outputs.latest_tag }}
 
           # Check if tag already exists
-          if curl --silent --fail -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-            "https://ghcr.io/v2/${{ env.GHCR_NAME }}/manifests/$TAG" > /dev/null; then
+          if docker manifest inspect $IMAGE:$TAG > /dev/null 2>&1; then
             echo "Image already exists for $TAG. Skipping build."
             exit 0
           fi
