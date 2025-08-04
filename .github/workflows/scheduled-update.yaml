@@ -5,6 +5,11 @@ on:
     - cron: "0 3 * * *"  # Every day at 03:00 UTC
   workflow_dispatch:
 
+env:
+  GHCR_NAME: "lanjelin/tari-zero"
+  APP_NAME: "tari"
+  APP_RELEASE_URL: "https://api.github.com/repos/tari-project/tari/releases/latest"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,10 +18,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Get latest tari version
+      - name: Get latest ${{ env.APP_NAME }} version
         id: version
         run: |
-          latest=$(curl -s https://api.github.com/repos/tari-project/tari/releases/latest \
+          latest=$(curl -s ${{ env.APP_RELEASE_URL }} \
             | jq -r .tag_name)
 
           echo "latest_tag=$latest" >> $GITHUB_OUTPUT
@@ -33,12 +38,12 @@ jobs:
 
       - name: Build and Push if updated
         run: |
-          IMAGE=ghcr.io/lanjelin/tari-zero
+          IMAGE=ghcr.io/${{ env.GHCR_NAME }}
           TAG=${{ steps.version.outputs.latest_tag }}
 
           # Check if tag already exists
           if curl --silent --fail -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-            "https://ghcr.io/v2/lanjelin/tari-zero/manifests/$TAG" > /dev/null; then
+            "https://ghcr.io/v2/${{ env.GHCR_NAME }}/manifests/$TAG" > /dev/null; then
             echo "Image already exists for $TAG. Skipping build."
             exit 0
           fi
@@ -47,7 +52,7 @@ jobs:
 
           docker buildx build \
             --label org.opencontainers.image.created="$BUILD_DATE" \
-            --build-arg TARI_TAG=$TAG \
+            --build-arg BUILD_TAG=$TAG \
             --tag $IMAGE:$TAG \
             --tag $IMAGE:latest \
             --label org.opencontainers.image.version="$TAG" \
