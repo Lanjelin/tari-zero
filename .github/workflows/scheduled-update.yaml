@@ -40,6 +40,7 @@ jobs:
         run: |
           IMAGE=ghcr.io/${{ env.GHCR_NAME }}
           TAG=${{ steps.version.outputs.latest_tag }}
+          COMMIT_HASH=$(curl -fsSL "https://api.github.com/repos/tari-project/tari/tags" | jq -r ".[] | select(.name==\"$TAG\").commit.sha[:7]")
 
           # Check if tag already exists
           if docker manifest inspect $IMAGE:$TAG > /dev/null 2>&1; then
@@ -52,6 +53,7 @@ jobs:
           docker buildx build \
             --label org.opencontainers.image.created="$BUILD_DATE" \
             --build-arg BUILD_TAG=$TAG \
+            --build-arg COMMIT_HASH=$COMMIT_HASH \
             --tag $IMAGE:$TAG \
             --tag $IMAGE:latest \
             --label org.opencontainers.image.version="$TAG" \

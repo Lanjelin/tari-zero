@@ -4,7 +4,9 @@ ARG BUILD_TAG=4.9.0
 FROM debian:bookworm-slim AS builder
 
 ARG BUILD_TAG
-ARG tari_url="https://github.com/tari-project/tari/releases/download/$BUILD_TAG/"
+ARG COMMIT_HASH
+ARG TARI_URL="https://github.com/tari-project/tari/releases/download/$BUILD_TAG/"
+ARG TARI_ZIP="tari_suite-${BUILD_TAG#v}-mainnet-$COMMIT_HASH-linux-x86_64.zip"
 
 RUN apt update && apt-get install -y \
       unzip wget ca-certificates binutils && \
@@ -12,11 +14,10 @@ RUN apt update && apt-get install -y \
 
 WORKDIR /build
 
-RUN tari_zip="tari_suite-${BUILD_TAG#v}-d9b1c0d-linux-x86_64.zip" && \
-    wget "$tari_url$tari_zip" && \
-    wget "$tari_url$tari_zip.sha256" && \
-    sha256sum "$tari_zip.sha256" --check || { echo "Hash mismatch!"; exit 1; } && \
-    unzip "$tari_zip"
+RUN wget "$TARI_URL$TARI_ZIP" && \
+    wget "$TARI_URL$TARI_ZIP.sha256" && \
+    sha256sum "$TARI_ZIP.sha256" --check || { echo "Hash mismatch!"; exit 1; } && \
+    unzip "$TARI_ZIP"
 
 COPY extract-deps.sh /build/extract-deps.sh
 RUN chmod +x extract-deps.sh && \
@@ -48,8 +49,6 @@ RUN gcc -Os -static -o entrypoint entrypoint.c
 # === Stage 3: Minimal runtime ===
 FROM scratch
 ARG BUILD_TAG
-
-COPY --from=builder /build/libminotari_mining_helper_ffi.so /bin/libminotari_mining_helper_ffi.so
 
 COPY --from=builder /out/bin /bin
 COPY --from=builder /out/lib /lib
